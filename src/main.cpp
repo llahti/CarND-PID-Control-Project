@@ -2,7 +2,7 @@
 #include <iostream>
 #include "json.hpp"
 #include "PID.h"
-#include <math.h>
+#include <cmath>
 #include "optimizer.h"
 #include <string>
 
@@ -41,27 +41,37 @@ int main(int argc, char *argv[])
   const bool use_optimizer = true;
 
   // Default PID parameters
-  const double Kp = -0.09;
-  const double Ki = -0.0001;
-  const double Kd = -0.05;
+  //const double Kp = -0.09;
+  //const double Ki = -0.0001;
+  //const double Kd = -0.05;
+  // Following coefficents should be quite close to optimal @30mph
+  const double Kp = -0.1562;
+  const double Ki = -3e-06;  // 0.000003;
+  const double Kd = -0.05976;
+  std::cout << "PID = " << Kp << " " << Ki << " " << Kd << std::endl;
 
-  PID pid;
+  /* NOTE! PID and DP coefficients 2017.08.03 13:31 after 111 iterations
+   * PID P=-0.119615 I=-3.50709e-06 D=-0.0427499
+   * DP 0.00850834 1.70167e-06 0.00417682
+   */
+
+  PID pid_steer;
   Optimizer optimizer;
   if (use_optimizer) {
-      pid.Init(Kp, Ki, Kd);
+      pid_steer.Init(Kp, Ki, Kd);
       optimizer = Optimizer();
-      optimizer.setPID(&pid);
+      optimizer.setPID(&pid_steer);
       optimizer.setPIDCoefficients(Kp, Ki, Kd);
-      optimizer.setChangeCoefficients(0.001, 0.000001, 0.001);
-      optimizer.setSkipTime(5);
+      optimizer.setChangeCoefficients(std::abs(Kp*0.1), std::abs(Ki*0.1), std::abs(Kd*0.1));
       optimizer.setIterationTime(120);
+      optimizer.setSkipTime(10);
   }
   else {
-    pid.Init(Kp, Ki, Kd);
+    pid_steer.Init(Kp, Ki, Kd);
   }
 
 
-  h.onMessage([&pid, &optimizer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  h.onMessage([&pid_steer, &optimizer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -86,8 +96,8 @@ int main(int argc, char *argv[])
           }
 
           // Update error and calculate new steering value
-          pid.UpdateError(cte);
-          steer_value = pid.TotalError();
+          pid_steer.UpdateError(cte);
+          steer_value = pid_steer.TotalError();
 
           // DEBUG
           //timestep++;
@@ -97,7 +107,7 @@ int main(int argc, char *argv[])
             if (optimizer.need_reset) {
                 std::string msg = "42[\"reset\"]";
                 ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-                pid.Reset();
+                pid_steer.Reset();
                 optimizer.need_reset = false;
                 return;
               }

@@ -71,7 +71,7 @@ public:
   void setPIDCoefficients(const double Kp, const double Ki,const double Kd);
 
   /**
-   * @brief setChangeCoefficients Change coeffecients are used to change value of PID coefficients.
+   * @brief setChangeCoefficients sets DP(change) coeffecients which are used to calculate new value of PID coefficients.
    * @param Dp
    * @param Di
    * @param Dd

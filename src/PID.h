@@ -27,17 +27,17 @@ public:
   double Ki;
   double Kd;
 
-  /*
+  /**
   * Constructor
   */
   PID();
 
-  /*
+  /**
   * Destructor.
   */
   virtual ~PID();
 
-  /*
+  /**
   * Initialize PID.
   */
   void Init(double Kp_, double Ki_, double Kd_);
@@ -47,23 +47,26 @@ public:
    */
   void Reset();
 
-  /*
+  /**
   * Update the PID error variables given cross track error.
   */
   void UpdateError(double cte);
 
 
-  /*
-   * Set P,I and D coefficients
+  /**
+   * @brief Set P,I and D coefficients
+   * @param Kp_ Controls the proportional gain
+   * @param Ki_ Controls the integral gain (sum of previous errors)
+   * @Param Kd_ Controls the derivate gain (change rate of error)
    */
   void SetCoefficents(const double Kp_, const double Ki_, const double Kd_);
 
-  /*
+  /**
   * Calculate the total PID error.
   */
   double TotalError();
 
-  /*
+  /**
    * Returns the total runtime of PID controller.
    * It is calculated as: time_now - time_firstupdate
    * Time is returned in seconds

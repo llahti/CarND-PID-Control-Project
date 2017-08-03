@@ -31,11 +31,17 @@ double Optimizer::getChangeCoeffSum() {
 
 
 double Optimizer::getRMSE() {
-  double squared_sum;
+  double squared_sum = 0;
   for (auto& n : errors_update){
     squared_sum += n * n;
   }
-  return sqrt(squared_sum / errors_update.size());
+  const double rmse = sqrt(squared_sum / errors_update.size());
+
+  if (rmse < 0) {
+    std::cout << "ERROR: Got negative RMSE. Size of array is" << errors_update.size() << std::endl;
+  }
+
+  return rmse;
 }
 
 void Optimizer::setPID(PID* pid) {
@@ -86,12 +92,13 @@ void Optimizer::Update(const double error) {
   // One iteration is done --> Prepare things for next iteration
   if (runtime > iteration_time) {
     // START OF TWIDDLE ALGORITHM
-    double rmse = getRMSE();
-    errors_iteration_rmse.push_back(getRMSE());
+    const double rmse = getRMSE();
+    errors_iteration_rmse.push_back(rmse);
     std::cout << n_iteration
-              << " RMSE=" << rmse
+              << " Best RMSE=" << best_error
+              << " this RMSE=" << rmse
               << "\tP=" << pid->Kp << " I=" << pid->Ki << " D=" << pid->Kd
-              << "\tDp=" << PID_dp[0] << " Di=" << PID_dp[1]<< " Dd=" << PID_dp[2]
+              //<< "\tDp=" << PID_dp[0] << " Di=" << PID_dp[1]<< " Dd=" << PID_dp[2]
               << "\tDP_SUM=" << getChangeCoeffSum() << std::endl;
     // Reset timers
     //pid->Reset();
@@ -100,56 +107,83 @@ void Optimizer::Update(const double error) {
     errors_update.clear();
 
     if (n_iteration==0) {
+      // This is first iteration so we just save reference value for further rmse comparisons.
+      std::cout << "First iteration! RMSE=" << rmse << std::endl;
       best_error = rmse;
     }
     else {
+      // The actual twiddle algorithm starts here
       double dp_sum = getChangeCoeffSum();
       // Check whether we still need to optimize
-      if (dp_sum > tolerance) {
-          // Optimizing
-          //std::cout << "Optimizer: i=" << n_iteration
-          //          << " Twiddle state=" << twiddle_state
-          //          << " i_coeff=" << i_coeff << std::endl;
-          if (twiddle_state==0) {
-              // First step is to change coefficients
-              PID_coefficients[i_coeff] += PID_dp[i_coeff];
+      if (std::abs(dp_sum) > tolerance) {
+        // Optimizing
+        std::cout << "\tTwiddle state=" << twiddle_state
+                  << " i_coeff=" << i_coeff << std::endl;
+        if (twiddle_state==0) {
+            // First step is to change coefficients
+            std::cout << "\tChange PID coefficients " << PID_coefficients[0] << " " << PID_coefficients[1] << " " << PID_coefficients[2];
+            PID_coefficients[i_coeff] += PID_dp[i_coeff];
+            std::cout << " --> " << PID_coefficients[0] << " " << PID_coefficients[1] << " " << PID_coefficients[2] << std::endl;
+            pid->SetCoefficents(PID_coefficients[0],
+                PID_coefficients[1],
+                PID_coefficients[2]);
+            twiddle_state = 1;  // on next iteration continue from second stage of twiddle
+          }
+        else if (twiddle_state==1){
+          // Second step is to check whether RMSE improved
+            if (rmse < best_error) {
+              // RMSE improved.. continue to same direction
+              std::cout << "\tRMSE improved from " <<  best_error << " to " << rmse << std::endl;
+              best_error = rmse;
+
+              std::cout << "\tChange DP coefficients " << PID_dp[0] << " " << PID_dp[1] << " " << PID_dp[2];
+              PID_dp[i_coeff] *= 1.1;
+              std::cout << " --> " << PID_dp[0] << " " << PID_dp[1] << " " << PID_dp[2] << std::endl;
+
+              twiddle_state = 0;  // start again from the first twiddle state
+
+              std::cout << "\ti_coef: " << i_coeff;
+              i_coeff = (i_coeff +1 ) % 3;  // continue optimizing from the next coeff
+              std::cout << " --> " << i_coeff << std::endl;
+            }
+            else {
+              // RMSE got worse.. change direction
+              std::cout << "\tRMSE did not improve. Best RMSE is " << best_error << " this time we got " << rmse << std::endl;
+              std::cout << "\tChange PID coefficients " << PID_coefficients[0] << " " << PID_coefficients[1] << " " << PID_coefficients[2];
+              PID_coefficients[i_coeff] -= 2 * PID_dp[i_coeff];
+              std::cout << " --> " << PID_coefficients[0] << " " << PID_coefficients[1] << " " << PID_coefficients[2] << std::endl;
+
               pid->SetCoefficents(PID_coefficients[0],
                   PID_coefficients[1],
                   PID_coefficients[2]);
-              twiddle_state = 1;  // on next iteration continue from second stage of twiddle
+              twiddle_state = 2;
             }
-          else if (twiddle_state==1){
-            // Second step is to check whether RMSE improved
-              if (error < best_error) {
-                // RMSE improved.. continue to same direction
-                best_error = error;
-                PID_dp[i_coeff] *= 1.1;
-                twiddle_state = 0;  // start again from the first twiddle state
-                i_coeff = (i_coeff +1 ) % 3;  // continue optimizing from the next coeff
-              }
-              else {
-                // RMSE got worse.. change direction
-                PID_coefficients[i_coeff] -= 2 * PID_dp[i_coeff];
-                pid->SetCoefficents(PID_coefficients[0],
-                    PID_coefficients[1],
-                    PID_coefficients[2]);
-                twiddle_state = 2;
-              }
+        }
+        else if (twiddle_state==2) {
+          if (rmse < best_error) {
+            std::cout << "\tRMSE improved from " <<  best_error << " to " << rmse << std::endl;
+            best_error = rmse;
+
+            std::cout << "\tIncrease DP coefficients " << PID_dp[0] << " " << PID_dp[1] << " " << PID_dp[2];
+            PID_dp[i_coeff] *= 1.1;
+            std::cout << " --> " << PID_dp[0] << " " << PID_dp[1] << " " << PID_dp[2] << std::endl;
           }
-          else if (twiddle_state==2) {
-            if (error < best_error) {
-              best_error = error;
-              PID_dp[i_coeff] *= 1.1;
-            }
-            else {
-              PID_coefficients[i_coeff] += PID_dp[i_coeff];
-              PID_dp[i_coeff] *= 0.9;
-            }
-            i_coeff = (i_coeff + 1) % 3;  // continue optimizing from the next coeff
-            twiddle_state = 0;  // start again from the first twiddle state
+          else {
+            std::cout << "\tRMSE did not improve. Best RMSE is " << best_error << " this time we got " << rmse << std::endl;
+            PID_coefficients[i_coeff] += PID_dp[i_coeff];
+
+            std::cout << "\tDecrease DP coefficients " << PID_dp[0] << " " << PID_dp[1] << " " << PID_dp[2];
+            PID_dp[i_coeff] *= 0.7;
+            std::cout << " --> " << PID_dp[0] << " " << PID_dp[1] << " " << PID_dp[2] << std::endl;
           }
+          std::cout << "\ti_coef: " << i_coeff;
+          i_coeff = (i_coeff + 1) % 3;  // continue optimizing from the next coeff
+          std::cout << " --> " << i_coeff << std::endl;
+          twiddle_state = 0;  // start again from the first twiddle state
+        }
         //twiddle_state++;
-        } // END_IF dp_sum > tolrance
+      } // END_IF dp_sum > tolrance
+      else { std::cout << "NOTHING TO OPTIMIZE!" << std::endl; }
     }
     // Increasce iteration counter
     n_iteration++;

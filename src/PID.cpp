@@ -5,7 +5,8 @@
 using namespace std;
 
 /*
-* TODO: Complete the PID class.
+* This file implementents a PID controller.
+* This PID controller takes in the error of set-point and real-value and then calculates new control variable.
 */
 
 PID::PID() {
@@ -15,9 +16,10 @@ PID::PID() {
 PID::~PID() {}
 
 void PID::Init(double Kp_, double Ki_, double Kd_) {
-  Kp = Kp_;
-  Kd = Kd_;
-  Ki = Ki_;
+  SetCoefficents(Kp_, Ki_, Kd_);
+  //Kp = Kp_;
+  //Kd = Kd_;
+  //Ki = Ki_;
 
   // Errors should be zero in the beginning
   d_error = 0.0;
@@ -33,7 +35,7 @@ void PID::Reset() {
 }
 
 void PID::UpdateError(double cte) {
-  // D-Error is only time dependent
+  // D-Error is time dependent so we need to check that timer is initialized
   if (is_timer_initialized) {
     // Calculate time difference between this and previous update
     timestamp_now = std::chrono::high_resolution_clock::now();
