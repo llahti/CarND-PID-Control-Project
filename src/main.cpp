@@ -53,6 +53,12 @@ int main(int argc, char *argv[])
   /* NOTE! PID and DP coefficients 2017.08.03 13:31 after 111 iterations
    * PID P=-0.119615 I=-3.50709e-06 D=-0.0427499
    * DP 0.00850834 1.70167e-06 0.00417682
+   *
+   * 120s intermediate results at loop 57
+   * RMSE=0.635414
+   * PID P=-0.158038 I=-3.21e-06 D=-0.05976
+   * 0.00128637 5.54631e-08 0.00070307
+
    */
 
   PID pid_steer;
@@ -90,6 +96,9 @@ int main(int argc, char *argv[])
           const double throttle = std::stod(j[1]["throttle"].get<std::string>());
 
           double steer_value;
+
+          double throttle_value = 1 / (1+cte);
+
 
           if (use_optimizer) {
               optimizer.Update(cte);
