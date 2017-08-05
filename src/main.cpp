@@ -45,10 +45,10 @@ int main(int argc, char *argv[])
   //const double Ki = -0.0001;
   //const double Kd = -0.05;
   // Following coefficents should be quite close to optimal @30mph
-  const double Kp = -0.1562;
-  const double Ki = -3e-06;  // 0.000003;
-  const double Kd = -0.05976;
-  std::cout << "PID = " << Kp << " " << Ki << " " << Kd << std::endl;
+  const double Kp = -0.07;
+  const double Ki = -6.0e-04;
+  const double Kd = -0.05;
+
 
   /* NOTE! PID and DP coefficients 2017.08.03 13:31 after 111 iterations
    * PID P=-0.119615 I=-3.50709e-06 D=-0.0427499
@@ -58,6 +58,10 @@ int main(int argc, char *argv[])
    * RMSE=0.635414
    * PID P=-0.158038 I=-3.21e-06 D=-0.05976
    * 0.00128637 5.54631e-08 0.00070307
+   *
+   * Best params for throttle 0.4
+   * P=-0.131452 I=-3.16948e-06 D=-0.0809834
+   *
 
    */
 
@@ -68,13 +72,15 @@ int main(int argc, char *argv[])
       optimizer = Optimizer();
       optimizer.setPID(&pid_steer);
       optimizer.setPIDCoefficients(Kp, Ki, Kd);
-      optimizer.setChangeCoefficients(std::abs(Kp*0.1), std::abs(Ki*0.1), std::abs(Kd*0.1));
-      optimizer.setIterationTime(120);
+      optimizer.setChangeCoefficients(std::abs(Kp*0.1), std::abs(Ki*1), std::abs(Kd*0.2));
+      optimizer.setIterationTime(240);  // 240s more than 2 laps
       optimizer.setSkipTime(10);
   }
   else {
     pid_steer.Init(Kp, Ki, Kd);
   }
+
+  std::cout << "PID Coefficients are: " << Kp << " " << Ki << " " << Kd << std::endl;
 
 
   h.onMessage([&pid_steer, &optimizer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
@@ -97,7 +103,10 @@ int main(int argc, char *argv[])
 
           double steer_value;
 
-          double throttle_value = 1 / (1+cte);
+          // double
+          double throtte_value;
+          //throttle_value = 1 / (1+cte);
+          throtte_value = 0.5;
 
 
           if (use_optimizer) {
@@ -124,7 +133,7 @@ int main(int argc, char *argv[])
                 // TODO: Solve duplication of steering message code
                 json msgJson;
                 msgJson["steering_angle"] = steer_value;
-                msgJson["throttle"] = 0.3;
+                msgJson["throttle"] = throtte_value;
                 auto msg = "42[\"steer\"," + msgJson.dump() + "]";
                 //std::cout << msg << std::endl;
                 ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
@@ -134,7 +143,7 @@ int main(int argc, char *argv[])
             // TODO: Solve duplication of steering message code
             json msgJson;
             msgJson["steering_angle"] = steer_value;
-            msgJson["throttle"] = 0.3;
+            msgJson["throttle"] = throtte_value;
             auto msg = "42[\"steer\"," + msgJson.dump() + "]";
             //std::cout << msg << std::endl;
             ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);

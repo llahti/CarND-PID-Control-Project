@@ -13,12 +13,13 @@ private:
   double skip_nseconds = 0;  // how many seconds are skipped in beginning
   double iteration_time = 10;  // Maximum runtime of optimizer in secondss
   double best_error;  // Best error in twiddle algorithm
+  std::vector<double> best_PID_coefficients;  // 3 numbers P, I and D
   unsigned int n_iteration = 0;  // Iteration counter for twiddle algorithm
   unsigned int i_coeff = 0;  // determine which coefficient is going to be modfied
 
   unsigned int twiddle_state = 0;  // State of twiddle; 0=first try, 1=second try
 
-  double tolerance = 0.00001;  // Optimizer tolerance. I.E. if sum of change vector is less than tolerance then stop optimization.
+  double tolerance = 0.0001;  // Optimizer tolerance. I.E. if sum of change vector is less than tolerance then stop optimization.
 
 
   PID* pid;  // Pointer to PID controller so taht we can change it's parameters.
@@ -39,10 +40,18 @@ public:
 
 
   /**
+   * @brief getAverageError Returns absolute average error of current iteration.
+   * @return
+   */
+  double getAbsAverageError();
+
+
+  /**
    * @brief getAverageError Returns average error of current iteration.
    * @return
    */
   double getAverageError();
+
 
   /**
    * @brief getChangeCoeffSum Returns sum of change coefficients. Small sum means that PID coefficients are well optimized.
@@ -51,7 +60,13 @@ public:
   double getChangeCoeffSum();
 
   /**
-   * @brief getRMSE Root-Mean-Square-Error
+   * @brief getMSE Mean-Squared-Error
+   * @return
+   */
+  double getMSE();
+
+  /**
+   * @brief getRMSE Root-Mean-Squared-Error
    * @return
    */
   double getRMSE();
