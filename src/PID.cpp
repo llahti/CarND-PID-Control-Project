@@ -11,6 +11,7 @@ using namespace std;
 
 PID::PID() {
   is_timer_initialized = false;
+  i_error_list.clear();
 }
 
 PID::~PID() {}
@@ -32,9 +33,12 @@ void PID::Reset() {
   d_error = 0.0;
   i_error = 0.0;
   p_error = 0.0;
+
+  i_error_list.clear();
 }
 
 void PID::UpdateError(double cte) {
+
   // D-Error is time dependent so we need to check that timer is initialized
   if (is_timer_initialized) {
     // Calculate time difference between this and previous update
@@ -51,9 +55,23 @@ void PID::UpdateError(double cte) {
     start_timestamp = previous_timestamp;
     is_timer_initialized = true;
   }
-  // Update P and I error
+
+  // Update P-error, (NOTE! Keep this after D-error calculations
+  // as d-error is using the previous p_error for delta calculations)
   p_error = cte;
-  i_error += cte;
+
+  // Update I-error
+  // I-error is limited to  past n errors
+  i_error_list.push_back(cte);
+  if (i_error_list.size() > i_error_length) {
+      i_error_list.pop_front();
+    }
+  double tmp_i_error = 0.0;
+  for (double& e:i_error_list) {
+      tmp_i_error += e;
+  }
+  i_error = tmp_i_error;
+  //std::cout << "Errors=" << p_error << "   " << i_error << "   " << d_error << std::endl;
 }
 
 void PID::SetCoefficents(const double Kp_, const double Ki_, const double Kd_){

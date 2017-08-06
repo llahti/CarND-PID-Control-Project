@@ -45,9 +45,9 @@ int main(int argc, char *argv[])
   //const double Ki = -0.0001;
   //const double Kd = -0.05;
   // Following coefficents should be quite close to optimal @30mph
-  const double Kp = -0.07;
-  const double Ki = -6.0e-04;
-  const double Kd = -0.05;
+  const double Kp = -0.08;
+  const double Ki = -0.00134;
+  const double Kd = -0.06;
 
 
   /* NOTE! PID and DP coefficients 2017.08.03 13:31 after 111 iterations
@@ -59,25 +59,24 @@ int main(int argc, char *argv[])
    * PID P=-0.158038 I=-3.21e-06 D=-0.05976
    * 0.00128637 5.54631e-08 0.00070307
    *
-   * Best params for throttle 0.4
-   * P=-0.131452 I=-3.16948e-06 D=-0.0809834
+   * 2018.08.06
+   * Best params for throttle 0.5
+   * est PID coefficients: -0.0516978 -0.00230624 -0.0487766
    *
 
    */
 
+  // Initialize PID controller for steering angle
   PID pid_steer;
+  pid_steer.Init(Kp, Ki, Kd);
+
   Optimizer optimizer;
   if (use_optimizer) {
       pid_steer.Init(Kp, Ki, Kd);
-      optimizer = Optimizer();
-      optimizer.setPID(&pid_steer);
-      optimizer.setPIDCoefficients(Kp, Ki, Kd);
-      optimizer.setChangeCoefficients(std::abs(Kp*0.1), std::abs(Ki*1), std::abs(Kd*0.2));
-      optimizer.setIterationTime(240);  // 240s more than 2 laps
-      optimizer.setSkipTime(10);
-  }
-  else {
-    pid_steer.Init(Kp, Ki, Kd);
+      optimizer = Optimizer(&pid_steer);
+      optimizer.setChangeCoefficients(std::abs(Kp*0.2), std::abs(Ki*0.5), std::abs(Kd*0.2));
+      optimizer.setIterationTime(60);  // 240s more than 2 laps
+      optimizer.setSkipTime(5);
   }
 
   std::cout << "PID Coefficients are: " << Kp << " " << Ki << " " << Kd << std::endl;
@@ -108,14 +107,15 @@ int main(int argc, char *argv[])
           //throttle_value = 1 / (1+cte);
           throtte_value = 0.5;
 
-
-          if (use_optimizer) {
-              optimizer.Update(cte);
-          }
-
           // Update error and calculate new steering value
-          pid_steer.UpdateError(cte);
-          steer_value = pid_steer.TotalError();
+          if (use_optimizer) {
+            optimizer.UpdateError(cte);
+            steer_value = optimizer.TotalError();
+          }
+          else {
+            pid_steer.UpdateError(cte);
+            steer_value = pid_steer.TotalError();
+            }
 
           // DEBUG
           //timestep++;

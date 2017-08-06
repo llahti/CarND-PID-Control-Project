@@ -1,23 +1,49 @@
 #include "optimizer.h"
 #include <iostream>
 #include <cmath>
+#include <algorithm>
 
 Optimizer::Optimizer() {
   setPIDCoefficients(0,0,0);
   setChangeCoefficients(1,1,1);
   errors_update.clear();
   best_PID_coefficients.clear();
+  control_output.clear();
 }
 
 Optimizer::Optimizer(PID* pid ) {
-  this->setPIDCoefficients(0,0,0);
+  this->setPIDCoefficients(pid->Kp, pid->Ki, pid->Kd);
   this->setChangeCoefficients(1,1,1);
   this->pid = pid;
   errors_update.clear();
   best_PID_coefficients.clear();
+  control_output.clear();
 }
 
 Optimizer::~Optimizer() {}
+
+double Optimizer::calculateIterationError() {
+  double cost = 0.0;
+  const double rmse = getRMSE() * 0.5;
+  const double abs_max_error = getAbsMaxError() * 0.5;
+
+  double delta_control2 = 0.0;
+  for (unsigned i = 1; i < control_output.size(); i++) {
+      double delta = control_output[i] - control_output[i-1];
+      delta_control2 += delta * delta;
+  }
+  delta_control2 = delta_control2 / control_output.size();
+  // Sum up errors into a cost value
+  cost += delta_control2 * 10;
+  cost += rmse;
+  cost += abs_max_error * 0.2;
+  std::cout << "Costs --"
+            << "  rmse=" << rmse
+            << "  abs_max_e=" << abs_max_error*0.2
+            << "  delta_ctrl=" << delta_control2 * 10
+            << std::endl;
+  return cost;
+}
 
 double Optimizer::getAbsAverageError() {
   double sum=0;
@@ -37,6 +63,11 @@ double Optimizer::getAverageError() {
 
 double Optimizer::getChangeCoeffSum() {
   return PID_dp[0] + PID_dp[1] + PID_dp[2];
+}
+
+double Optimizer::getAbsMaxError() {
+  const double max = *std::max_element(errors_update.begin(), errors_update.end());
+  return std::abs(max);
 }
 
 double Optimizer::getMSE() {
@@ -100,7 +131,10 @@ void Optimizer::setSkipTime(const double time) {
   }
 }
 
-void Optimizer::Update(const double error) {
+void Optimizer::UpdateError(const double error) {
+  // Update pid controller
+  pid->UpdateError(error);
+
   const double runtime =  pid->TotalRuntime();
 
   // Skip n seconds from the beginning.
@@ -111,9 +145,14 @@ void Optimizer::Update(const double error) {
   // One iteration is done --> Prepare things for next iteration
   if (runtime > iteration_time) {
     // START OF TWIDDLE ALGORITHM
-    const double error_metrics = getRMSE();
+    // Calculate error metrics for this iteration
+    const double error_metrics = calculateIterationError();
+    // And then clear erros from previous iterations
+    errors_update.clear();
+    control_output.clear();
+
     //const double error_metrics = getAbsAverageError();
-    errors_iteration_rmse.push_back(error_metrics);
+    errors_iteration.push_back(error_metrics);
     std::cout << n_iteration
               << " Best ERROR=" << best_error
               << " this ERROR=" << error_metrics
@@ -123,8 +162,7 @@ void Optimizer::Update(const double error) {
     // Reset timers
     //pid->Reset();
     need_reset = true;  // PID coefficients will be changed so reset is needed
-    // Clear erros from previous iteration
-    errors_update.clear();
+
 
     if (n_iteration==0) {
       // This is first iteration so we just save reference value for further rmse comparisons.
@@ -220,7 +258,8 @@ void Optimizer::Update(const double error) {
         std::cout << "Best PID coefficients: "
                   << best_PID_coefficients[0]
                   << " " << best_PID_coefficients[1]
-                  << " " << best_PID_coefficients[2];
+                  << " " << best_PID_coefficients[2]
+                  << std::endl;
         }
     }
     // Increasce iteration counter
@@ -233,6 +272,13 @@ void Optimizer::Update(const double error) {
       need_reset = false;
     }
 }
+
+double Optimizer::TotalError() {
+  double total_error = pid->TotalError();
+  control_output.push_back(total_error);
+  return total_error;
+}
+
 /*
  * def twiddle(tol=0.2):
     p = [0, 0, 0]
