@@ -34,9 +34,9 @@ double Optimizer::calculateIterationError() {
   }
   delta_control2 = delta_control2 / control_output.size();
   // Sum up errors into a cost value
-  cost += delta_control2 * 10;
+  cost += delta_control2 * 20;
   cost += rmse;
-  cost += abs_max_error * 0.2;
+  cost += abs_max_error * 0.4;
   std::cout << "Costs --"
             << "  rmse=" << rmse
             << "  abs_max_e=" << abs_max_error*0.2

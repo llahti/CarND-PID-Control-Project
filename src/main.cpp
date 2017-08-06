@@ -45,9 +45,9 @@ int main(int argc, char *argv[])
   //const double Ki = -0.0001;
   //const double Kd = -0.05;
   // Following coefficents should be quite close to optimal @30mph
-  const double Kp = -0.08;
-  const double Ki = -0.00134;
-  const double Kd = -0.06;
+  const double Kp = -0.0429;
+  const double Ki = -0.0022;
+  const double Kd = -0.053;
 
 
   /* NOTE! PID and DP coefficients 2017.08.03 13:31 after 111 iterations
@@ -67,15 +67,15 @@ int main(int argc, char *argv[])
    */
 
   // Initialize PID controller for steering angle
-  PID pid_steer;
+  PID pid_steer = PID();
   pid_steer.Init(Kp, Ki, Kd);
 
   Optimizer optimizer;
   if (use_optimizer) {
-      pid_steer.Init(Kp, Ki, Kd);
+      //pid_steer.Init(Kp, Ki, Kd);
       optimizer = Optimizer(&pid_steer);
-      optimizer.setChangeCoefficients(std::abs(Kp*0.2), std::abs(Ki*0.5), std::abs(Kd*0.2));
-      optimizer.setIterationTime(60);  // 240s more than 2 laps
+      optimizer.setChangeCoefficients(std::abs(Kp*0.1), std::abs(Ki*0.1), std::abs(Kd*0.1));
+      optimizer.setIterationTime(240);  // 240s more than 2 laps
       optimizer.setSkipTime(5);
   }
 
@@ -96,16 +96,19 @@ int main(int argc, char *argv[])
           // j[1] is the data JSON object
           // Data from simulator
           const double cte = std::stod(j[1]["cte"].get<std::string>());
-          const double speed = std::stod(j[1]["speed"].get<std::string>());
+          //const double speed = std::stod(j[1]["speed"].get<std::string>());
           const double angle = std::stod(j[1]["steering_angle"].get<std::string>());
-          const double throttle = std::stod(j[1]["throttle"].get<std::string>());
+          //const double throttle = std::stod(j[1]["throttle"].get<std::string>());
 
           double steer_value;
 
-          // double
-          double throtte_value;
-          //throttle_value = 1 / (1+cte);
-          throtte_value = 0.5;
+          // Throttle adjustment
+          // Purpose is to limit speed in corners
+          double throttle_value = 0.0;
+          throttle_value = 0.4;  // Static part of the throttle
+          throttle_value += 1 / (3+angle*angle);  // Adjusting by steering angle
+
+          //std::cout << "angle " << angle << std::endl;
 
           // Update error and calculate new steering value
           if (use_optimizer) {
@@ -133,7 +136,7 @@ int main(int argc, char *argv[])
                 // TODO: Solve duplication of steering message code
                 json msgJson;
                 msgJson["steering_angle"] = steer_value;
-                msgJson["throttle"] = throtte_value;
+                msgJson["throttle"] = throttle_value;
                 auto msg = "42[\"steer\"," + msgJson.dump() + "]";
                 //std::cout << msg << std::endl;
                 ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
@@ -143,7 +146,7 @@ int main(int argc, char *argv[])
             // TODO: Solve duplication of steering message code
             json msgJson;
             msgJson["steering_angle"] = steer_value;
-            msgJson["throttle"] = throtte_value;
+            msgJson["throttle"] = throttle_value;
             auto msg = "42[\"steer\"," + msgJson.dump() + "]";
             //std::cout << msg << std::endl;
             ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
