@@ -3,6 +3,36 @@ Self-Driving Car Engineer Nanodegree Program
 
 ---
 
+## Introduction
+
+This project is my PID-project submission in Self-Driving Car Engineerin Nanodegree Program.
+Target of the project is to design a PID controller to control car steering angle.
+Result is evaluated by attaching PID-controller to term2-simulator and simulating it. Simulator
+reports information such as.
+1. cte - cross-track-error
+2. steering angle
+3. speed
+4. throttle
+
+Here is how information is received in control loop
+```
+const double cte = std::stod(j[1]["cte"].get<std::string>());
+const double speed = std::stod(j[1]["speed"].get<std::string>());
+const double angle = std::stod(j[1]["steering_angle"].get<std::string>());
+const double throttle = std::stod(j[1]["throttle"].get<std::string>());
+```
+
+From control loop we are sending following information back to simulator
+1. Steering Angle
+2. Throttle
+
+From these values we are using **cte** as an error input to PID-controller. PID-controller is then
+using this given error information to calculate new control variable which in our car simulator
+is steering angle. Finally steering angle is sent back to simulator together with throttle. I have
+set throttle to fixed value for simplicity.
+
+
+
 ## Dependencies
 
 * cmake >= 3.5
