@@ -34,7 +34,7 @@ double Optimizer::calculateIterationError() {
   }
   delta_control2 = delta_control2 / control_output.size();
   // Sum up errors into a cost value
-  cost += delta_control2 * 160;  // Penalty when control is changing
+  cost += delta_control2 * 500;  // Penalty for steering angle change
   cost += rmse * 0.7;
   cost += abs_max_error * 0.4;
   std::cout << "Costs --"

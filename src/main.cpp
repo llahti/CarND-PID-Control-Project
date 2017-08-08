@@ -38,12 +38,12 @@ int main(int argc, char *argv[])
   uWS::Hub h;
 
   // Set to true if optimizer is used to tune PID coefficients
-  const bool use_optimizer = false;
+  const bool use_optimizer = true;
 
   // Default steering control PID parameters which should work at 50mph
-  const double Kp_steer = -0.058;
+  const double Kp_steer = -0.055;
   const double Ki_steer = -0.0022;
-  const double Kd_steer = -0.05;
+  const double Kd_steer = -0.055;
   // default speed control PID parameters
   const double target_speed = 50.0;
   const double Kp_speed = 0.4;
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
             //std::cout << msg << std::endl;
             // DEBUG
             //timestep++;
-            std::cout << pid_steer.TotalRuntime() << " CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+            //std::cout << pid_steer.TotalRuntime() << " CTE: " << cte << " Steering Value: " << steer_value << std::endl;
             ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
           }
         }
