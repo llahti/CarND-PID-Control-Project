@@ -61,34 +61,73 @@ public:
   double Ki;
   double Kd;
 
+  // Set-point
+  double target_value;
+
   /**
-  * Constructor
+  * Default Constructor
   */
   PID();
+
+
+  /**
+   * @brief PID Constructor to give all variables at once
+   * @param target process value
+   * @param Kp Proportional coefficient
+   * @param Ki Integral coefficient
+   * @param Kd Derivate coefficient
+   */
+  PID(double target, double Kp, double Ki, double Kd);
+
 
   /**
   * Destructor.
   */
   virtual ~PID();
 
+
   /**
   * Initialize PID.
   */
   void Init(double Kp_, double Ki_, double Kd_);
+
 
   /**
    * @brief Reset resets the PID by setting runtime to zero and resetting errors
    */
   void Reset();
 
+
+  /**
+   * @brief Update do the control cycle, calculate error, and give new control value
+   * @param measurement real world measurement
+   * @return new control value
+   */
+  double Update(double measurement);
+
+
   /**
   * Update the PID error variables given cross track error.
   * This function updates internal error parameters of P, I and D term.
-  * P_error = cte
-  * D_error = cte/delta_t (delta_t is time between this and last update)
-  * I_error = sum of all errors
+  * P_error = error
+  * D_error = error/delta_t (delta_t is time between this and last update)
+  * I_error = sum of all previous errors
   */
-  void UpdateError(double cte);
+  void UpdateError(double error);
+
+
+  /**
+   * @brief UpdateError_d updates internal variable of derivate error
+   * @param error
+   */
+  void UpdateError_d(double error);
+
+
+  /**
+   * @brief UpdateError_i Updates internal variable of integral error
+   * @param error
+   */
+  void UpdateError_i(double error);
 
 
   /**
@@ -99,10 +138,12 @@ public:
    */
   void SetCoefficents(const double Kp_, const double Ki_, const double Kd_);
 
+
   /**
   * Calculate the total PID error.
   */
   double TotalError();
+
 
   /**
    * Returns the total runtime of PID controller.
@@ -110,6 +151,14 @@ public:
    * Time is returned in seconds
    */
   double TotalRuntime();
+
+
+  /**
+   * @brief setTarget set the target process value
+   * @param target process value
+   */
+  void setTarget(double target);
+
 };
 
 #endif /* PID_H */

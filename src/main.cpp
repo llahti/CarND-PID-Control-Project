@@ -38,51 +38,41 @@ int main(int argc, char *argv[])
   uWS::Hub h;
 
   // Set to true if optimizer is used to tune PID coefficients
-  const bool use_optimizer = true;
+  const bool use_optimizer = false;
 
-  // Default PID parameters
-  //const double Kp = -0.09;
-  //const double Ki = -0.0001;
-  //const double Kd = -0.05;
-  // Following coefficents should be quite close to optimal @30mph
-  const double Kp = -0.058;
-  const double Ki = -0.0022;
-  const double Kd = -0.05;
-
-
-  /* NOTE! PID and DP coefficients 2017.08.03 13:31 after 111 iterations
-   * PID P=-0.119615 I=-3.50709e-06 D=-0.0427499
-   * DP 0.00850834 1.70167e-06 0.00417682
-   *
-   * 120s intermediate results at loop 57
-   * RMSE=0.635414
-   * PID P=-0.158038 I=-3.21e-06 D=-0.05976
-   * 0.00128637 5.54631e-08 0.00070307
-   *
-   * 2018.08.06
-   * Best params for throttle 0.5
-   * est PID coefficients: -0.0516978 -0.00230624 -0.0487766
-   *
-
-   */
+  // Default steering control PID parameters which should work at 50mph
+  const double Kp_steer = -0.058;
+  const double Ki_steer = -0.0022;
+  const double Kd_steer = -0.05;
+  // default speed control PID parameters
+  const double target_speed = 50.0;
+  const double Kp_speed = 0.4;
+  const double Ki_speed = 0.01;
+  const double Kd_speed = 0.0;
 
   // Initialize PID controller for steering angle
   PID pid_steer = PID();
-  pid_steer.Init(Kp, Ki, Kd);
+  pid_steer.Init(Kp_steer, Ki_steer, Kd_steer);
+  // Initialize PID controller for speed controlling
+  PID pid_speed = PID(target_speed, Kp_speed, Ki_speed, Kd_speed);
 
+
+
+  // Optimizer is used only for steering
   Optimizer optimizer;
   if (use_optimizer) {
       //pid_steer.Init(Kp, Ki, Kd);
       optimizer = Optimizer(&pid_steer);
-      optimizer.setChangeCoefficients(std::abs(Kp*0.05), std::abs(Ki*0.05), std::abs(Kd*0.05));
-      optimizer.setIterationTime(500);  // 240s more than 2 laps
+      optimizer.setChangeCoefficients(std::abs(Kp_steer*0.05), std::abs(Ki_steer*0.05), std::abs(Kd_steer*0.05));
+      optimizer.setIterationTime(240);  // 240s more than 2 laps
       optimizer.setSkipTime(5);
   }
 
-  std::cout << "PID Coefficients are: " << Kp << " " << Ki << " " << Kd << std::endl;
+  std::cout << "Steering PID Coefficients are: " << Kp_steer << " " << Ki_steer << " " << Kd_steer << std::endl;
+  std::cout << "Speed PID Coefficients are: " << Kp_speed << " " << Ki_speed << " " << Kd_speed << std::endl;
 
 
-  h.onMessage([&pid_steer, &optimizer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+  h.onMessage([&pid_steer, &pid_speed, &optimizer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -96,19 +86,15 @@ int main(int argc, char *argv[])
           // j[1] is the data JSON object
           // Data from simulator
           const double cte = std::stod(j[1]["cte"].get<std::string>());
-          //const double speed = std::stod(j[1]["speed"].get<std::string>());
-          const double angle = std::stod(j[1]["steering_angle"].get<std::string>());
+          // If you need below variables then uncomment line
+          const double speed = std::stod(j[1]["speed"].get<std::string>());
+          //const double angle = std::stod(j[1]["steering_angle"].get<std::string>());
           //const double throttle = std::stod(j[1]["throttle"].get<std::string>());
 
           double steer_value;
 
           // Throttle adjustment
-          // Purpose is to limit speed in corners
-          double throttle_value = 0.0;
-          throttle_value = 0.5;  // Static part of the throttle
-          //throttle_value += 1 / (3+angle*angle);  // Adjusting by steering angle
-
-          //std::cout << "angle " << angle << std::endl;
+          double throttle_value = pid_speed.Update(speed);
 
           // Update error and calculate new steering value
           if (use_optimizer) {

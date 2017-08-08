@@ -10,17 +10,24 @@ using namespace std;
 */
 
 PID::PID() {
+  // Timer initialization
   is_timer_initialized = false;
   i_error_list.clear();
+}
+
+PID::PID(double target, double Kp, double Ki, double Kd) {
+  // Timer initialization
+  is_timer_initialized = false;
+  i_error_list.clear();
+  // Set target and PID coefficients
+  setTarget(target);
+  Init(Kp, Ki, Kd);
 }
 
 PID::~PID() {}
 
 void PID::Init(double Kp_, double Ki_, double Kd_) {
   SetCoefficents(Kp_, Ki_, Kd_);
-  //Kp = Kp_;
-  //Kd = Kd_;
-  //Ki = Ki_;
 
   // Errors should be zero in the beginning
   d_error = 0.0;
@@ -37,8 +44,15 @@ void PID::Reset() {
   i_error_list.clear();
 }
 
-void PID::UpdateError(double cte) {
+double PID::Update(double measurement) {
+  double error = target_value - measurement;
+  UpdateError(error);
+  double control_variable = TotalError();
+  return control_variable;
+}
 
+void PID::UpdateError_d(double cte)
+{
   // D-Error is time dependent so we need to check that timer is initialized
   if (is_timer_initialized) {
     // Calculate time difference between this and previous update
@@ -55,14 +69,12 @@ void PID::UpdateError(double cte) {
     start_timestamp = previous_timestamp;
     is_timer_initialized = true;
   }
+}
 
-  // Update P-error, (NOTE! Keep this after D-error calculations
-  // as d-error is using the previous p_error for delta calculations)
-  p_error = cte;
-
-  // Update I-error
+void PID::UpdateError_i(double error)
+{
   // I-error is limited to  past n errors
-  i_error_list.push_back(cte);
+  i_error_list.push_back(error);
   if (i_error_list.size() > i_error_length) {
       i_error_list.pop_front();
     }
@@ -71,7 +83,19 @@ void PID::UpdateError(double cte) {
       tmp_i_error += e;
   }
   i_error = tmp_i_error;
-  //std::cout << "Errors=" << p_error << "   " << i_error << "   " << d_error << std::endl;
+}
+
+void PID::UpdateError(double error) {
+  // Update D-error
+  UpdateError_d(error);
+
+  // Update P-error,
+  // (NOTE! Keep this after D-error calculations
+  // as d-error is using the previous p_error for delta calculations)
+  p_error = error;
+
+  // Update I-error
+  UpdateError_i(error);
 }
 
 void PID::SetCoefficents(const double Kp_, const double Ki_, const double Kd_){
@@ -95,5 +119,9 @@ double PID::TotalRuntime() {
     // If timer is not initialized we'll get erroneus result by above calculations so therefore let's return 0.0
     return 0.0;
   }
+}
+
+void PID::setTarget(double target) {
+  target_value = target;
 }
 
