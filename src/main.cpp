@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
   const double Ki_steer = -0.0022;
   const double Kd_steer = -0.055;
   // default speed control PID parameters
-  const double target_speed = 50.0;
+  const double target_speed = 55.0;
   const double Kp_speed = 0.4;
   const double Ki_speed = 0.01;
   const double Kd_speed = 0.0;
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
   // Optimizer is used only for steering
   Optimizer optimizer;
   if (use_optimizer) {
-      //pid_steer.Init(Kp, Ki, Kd);
+      std::cout << "\nOptimizer mode!\n" << std::endl;
       optimizer = Optimizer(&pid_steer);
       optimizer.setChangeCoefficients(std::abs(Kp_steer*0.05), std::abs(Ki_steer*0.05), std::abs(Kd_steer*0.05));
       optimizer.setIterationTime(240);  // 240s more than 2 laps
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
   }
 
   std::cout << "Steering PID Coefficients are: " << Kp_steer << " " << Ki_steer << " " << Kd_steer << std::endl;
-  std::cout << "Speed PID Coefficients are: " << Kp_speed << " " << Ki_speed << " " << Kd_speed << std::endl;
+  std::cout << "Speed PID Coefficients are: " << Kp_speed << " " << Ki_speed << " " << Kd_speed << std::endl << std::endl;
 
 
   h.onMessage([&pid_steer, &pid_speed, &optimizer](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
@@ -104,9 +104,7 @@ int main(int argc, char *argv[])
           else {
             pid_steer.UpdateError(cte);
             steer_value = pid_steer.TotalError();
-            }
-
-
+          }
 
           if (use_optimizer) {
             if (optimizer.need_reset) {

@@ -33,14 +33,19 @@ double Optimizer::calculateIterationError() {
       delta_control2 += delta * delta;
   }
   delta_control2 = delta_control2 / control_output.size();
+  // Define weights for costs
+  const double w_delta_ctrl = 200;
+  const double w_rmse = 0.7;
+  const double w_abs_max_e = 0.4;
   // Sum up errors into a cost value
-  cost += delta_control2 * 500;  // Penalty for steering angle change
-  cost += rmse * 0.7;
-  cost += abs_max_error * 0.4;
+
+  cost += delta_control2 * w_delta_ctrl;  // Penalty for steering angle change
+  cost += rmse * w_rmse;
+  cost += abs_max_error * w_abs_max_e;
   std::cout << "Costs --"
-            << "  rmse=" << rmse
-            << "  abs_max_e=" << abs_max_error*0.2
-            << "  delta_ctrl=" << delta_control2 * 10
+            << "  rmse=" << rmse * w_rmse
+            << "  abs_max_e=" << abs_max_error*w_abs_max_e
+            << "  delta_ctrl=" << delta_control2 * w_delta_ctrl
             << std::endl;
   return cost;
 }
