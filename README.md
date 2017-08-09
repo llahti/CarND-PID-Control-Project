@@ -31,7 +31,68 @@ using this given error information to calculate new control variable which in ou
 is steering angle. Finally steering angle is sent back to simulator together with throttle. I have
 set throttle to fixed value for simplicity.
 
+### Steering Control
 
+As simulator is already returning error value (cross-track error) we don't need to calculate it in PID controllor.
+This leads us to use two specific functions `UpdateError()`and `TotalError()`. In main loop we are using these
+functions in following way.
+```
+pid_steer.UpdateError(cte);
+steer_value = pid_steer.TotalError();
+```
+
+These are handling the value update of internal error variables and calculating new control value.
+
+In below image you can see how above mentioned functions are related in bigger picture.
+![PID Steering Control] (./illustrations/PID_steering_control.svg)
+
+### Speed Control
+
+Eventhough car would drive around the track with fixed throttle value it makes sense to add pid control loop for
+speed because then we can ensure that speed is quite constant around the track. Speed controller is more complete
+version of PID controller than for steering because it incorporates also error calculations from the measured speed.
+
+In main loop this is implemented by using below command.
+```
+// Throttle adjustment
+double throttle_value = pid_speed.Update(speed);
+```
+
+It is bit simpler than steering control and from below image you can see that it `Update()` method
+implements the whole PID control.
+![PID Speed Control] (./illustrations/PID_speed_control.svg)
+
+### Optimizer
+
+I have created also optimizer based on twiddle algorithm to automatically tune PID-coefficients.
+Precondition for automatic tuning in simulator is that coefficients are manually adjusted so that
+car stays on track.
+
+Optimizer can be turned on/off by setting use_optimzier variable.
+```
+const bool use_optimizer = false;
+```
+
+Optimizer is then initialized with PID controller, and coefficients which are changing the PID-coefficients.
+Also iteration time is set.
+```
+Optimizer optimizer;
+if (use_optimizer) {
+    std::cout << "\nOptimizer mode!\n" << std::endl;
+    optimizer = Optimizer(&pid_steer);
+    optimizer.setChangeCoefficients(std::abs(Kp_steer*0.2), std::abs(Ki_steer*0.2), std::abs(Kd_steer*0.2));
+    optimizer.setIterationTime(240);  // 240s more than 2 laps
+    optimizer.setSkipTime(5);
+}
+```
+
+When optimizer is in use we are replacing PID-updates by following code.
+```
+if (use_optimizer) {
+  optimizer.UpdateError(cte);
+  steer_value = optimizer.TotalError();
+}
+```
 
 ## Dependencies
 
