@@ -44,7 +44,8 @@ steer_value = pid_steer.TotalError();
 These are handling the value update of internal error variables and calculating new control value.
 
 In below image you can see how above mentioned functions are related in bigger picture.
-![PID Steering Control] (./illustrations/PID_steering_control.svg)
+
+![PID Steering Control](./illustrations/PID_steering_control.svg "PID Steering Control")
 
 ### Speed Control
 
@@ -60,7 +61,8 @@ double throttle_value = pid_speed.Update(speed);
 
 It is bit simpler than steering control and from below image you can see that it `Update()` method
 implements the whole PID control.
-![PID Speed Control] (./illustrations/PID_speed_control.svg)
+
+![PID Speed Control](./illustrations/PID_speed_control.svg "PID Speed Control")
 
 ### Optimizer
 
