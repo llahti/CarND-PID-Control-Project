@@ -44,7 +44,7 @@ private:
   // This vector is used to calculate I-error
   std::list<double> i_error_list;
   // maximum number of items in i_error_list
-  unsigned int i_error_length = 20;
+  unsigned int i_error_length = 10;
 
 public:
   /*

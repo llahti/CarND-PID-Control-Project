@@ -65,7 +65,7 @@ void PID::UpdateError_d(double cte)
   }
   else {
     previous_timestamp = std::chrono::high_resolution_clock::now();
-    d_error = cte - p_error;  // Here p_error is effectively a previous cte
+    d_error = 0;  // Should be 0 on first iteration as we don't have delta_t
     start_timestamp = previous_timestamp;
     is_timer_initialized = true;
   }
@@ -83,6 +83,7 @@ void PID::UpdateError_i(double error)
       tmp_i_error += e;
   }
   i_error = tmp_i_error;
+  //i_error += error;
 }
 
 void PID::UpdateError(double error) {

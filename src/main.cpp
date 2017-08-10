@@ -40,12 +40,23 @@ int main(int argc, char *argv[])
   // Set to true if optimizer is used to tune PID coefficients
   const bool use_optimizer = true;
 
-  // Default steering control PID parameters which should work at 50mph
-  const double Kp_steer = -0.055;
-  const double Ki_steer = -0.0022;
-  const double Kd_steer = -0.055;
+  // Default steering control PID parameters for 55mph
+  //const double Kp_steer = -0.0501;
+  //const double Ki_steer = -0.0021;
+  //const double Kd_steer = -0.0543;
+
+  // Default steering control PID parameters for 60mph
+  //const double Kp_steer = -0.0512187;
+  //const double Ki_steer = -0.00201776;
+  //const double Kd_steer = -0.0480154;
+
+  // Default steering control PID parameters for 70mph
+  const double Kp_steer = -0.05;
+  const double Ki_steer = -0.002;
+  const double Kd_steer = -0.048;
+
   // default speed control PID parameters
-  const double target_speed = 55.0;
+  const double target_speed = 60.0;
   const double Kp_speed = 0.4;
   const double Ki_speed = 0.01;
   const double Kd_speed = 0.0;
@@ -63,8 +74,8 @@ int main(int argc, char *argv[])
   if (use_optimizer) {
       std::cout << "\nOptimizer mode!\n" << std::endl;
       optimizer = Optimizer(&pid_steer);
-      optimizer.setChangeCoefficients(std::abs(Kp_steer*0.05), std::abs(Ki_steer*0.05), std::abs(Kd_steer*0.05));
-      optimizer.setIterationTime(240);  // 240s more than 2 laps
+      optimizer.setChangeCoefficients(std::abs(Kp_steer*0.1), std::abs(Ki_steer*0.3), std::abs(Kd_steer*0.1));
+      optimizer.setIterationTime(120);  // 240s more than 2 laps
       optimizer.setSkipTime(5);
   }
 
@@ -88,13 +99,17 @@ int main(int argc, char *argv[])
           const double cte = std::stod(j[1]["cte"].get<std::string>());
           // If you need below variables then uncomment line
           const double speed = std::stod(j[1]["speed"].get<std::string>());
-          //const double angle = std::stod(j[1]["steering_angle"].get<std::string>());
+          const double angle = std::stod(j[1]["steering_angle"].get<std::string>());
           //const double throttle = std::stod(j[1]["throttle"].get<std::string>());
 
           double steer_value;
 
           // Throttle adjustment
           double throttle_value = pid_speed.Update(speed);
+
+          double target_speed = 63;
+          pid_speed.setTarget(70 - 5*1/((1+cte)*(1+cte)) - 0.5*angle*angle);
+
 
           // Update error and calculate new steering value
           if (use_optimizer) {
@@ -104,7 +119,14 @@ int main(int argc, char *argv[])
           else {
             pid_steer.UpdateError(cte);
             steer_value = pid_steer.TotalError();
+            // DEBUG information
+            //std::cout << pid_steer.TotalRuntime() << " CTE: " << cte << " Steering Value: " << steer_value << std::endl;
           }
+
+          //std::cout << "P-ERROR: " << pid_steer.p_error * pid_steer.Kp
+          //          << " I-ERROR: " << pid_steer.i_error * pid_steer.Ki
+          //          << " D-ERROR: " << pid_steer.d_error * pid_steer.Kd
+          //          << std::endl;
 
           if (use_optimizer) {
             if (optimizer.need_reset) {
@@ -133,7 +155,7 @@ int main(int argc, char *argv[])
             //std::cout << msg << std::endl;
             // DEBUG
             //timestep++;
-            //std::cout << pid_steer.TotalRuntime() << " CTE: " << cte << " Steering Value: " << steer_value << std::endl;
+
             ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
           }
         }

@@ -34,9 +34,9 @@ double Optimizer::calculateIterationError() {
   }
   delta_control2 = delta_control2 / control_output.size();
   // Define weights for costs
-  const double w_delta_ctrl = 200;
-  const double w_rmse = 0.7;
-  const double w_abs_max_e = 0.4;
+  const double w_delta_ctrl = 150;  // 200 works for 55mph
+  const double w_rmse = 1;
+  const double w_abs_max_e = 0.2;
   // Sum up errors into a cost value
 
   cost += delta_control2 * w_delta_ctrl;  // Penalty for steering angle change

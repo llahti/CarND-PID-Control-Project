@@ -96,6 +96,21 @@ if (use_optimizer) {
 }
 ```
 
+#### Best PID-coefficients
+
+By using optimizer i was able to get best PID-parameters.
+Optimizer used following evaluation metrics to optimize parameters
+1. RMSE
+2. Abs. Max. Error
+3. Steering angle change
+
+In below table i have listed best parameter values for different speeds
+
+| speed[mph] |    P    |    I    |    D    |
+|-----------:|:-------:|:-------:|:-------:|
+|         55 | -0.0501 | -0.0021 | -0.0543 |
+|         60 | -0.0512 | -0.0020 | -0.0480 |
+
 ## Dependencies
 
 * cmake >= 3.5
