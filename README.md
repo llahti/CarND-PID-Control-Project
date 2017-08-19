@@ -2,6 +2,9 @@
 Self-Driving Car Engineer Nanodegree Program
 
 ---
+## Videos
+
+[2 laps @ 60mph](https://www.youtube.com/watch?v=A2mW6LQIhaE)
 
 ## Introduction
 
