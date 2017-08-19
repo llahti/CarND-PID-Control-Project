@@ -109,7 +109,7 @@ In below table i have listed best parameter values for different speeds
 | speed[mph] |    P    |    I    |    D    |
 |-----------:|:-------:|:-------:|:-------:|
 |         55 | -0.0501 | -0.0021 | -0.0543 |
-|         60 | -0.0512 | -0.0020 | -0.0480 |
+|         60 | -0.051 | -0.0025 | -0.0490 |
 
 ## Dependencies
 
