@@ -51,14 +51,14 @@ int main(int argc, char *argv[])
   //const double Kd_steer = -0.0480154;
 
   // Default steering control PID parameters for 70mph
-  const double Kp_steer = -0.05;
-  const double Ki_steer = -0.002;
-  const double Kd_steer = -0.048;
+  const double Kp_steer = -0.051;
+  const double Ki_steer = -0.0025;
+  const double Kd_steer = -0.049;
 
   // default speed control PID parameters
   const double target_speed = 60.0;
-  const double Kp_speed = 0.4;
-  const double Ki_speed = 0.01;
+  const double Kp_speed = 0.45;
+  const double Ki_speed = 0.04;
   const double Kd_speed = 0.0;
 
   // Initialize PID controller for steering angle
@@ -107,8 +107,9 @@ int main(int argc, char *argv[])
           // Throttle adjustment
           double throttle_value = pid_speed.Update(speed);
 
-          double target_speed = 63;
-          pid_speed.setTarget(70 - 5*1/((1+cte)*(1+cte)) - 0.5*angle*angle);
+          // These should be commented out when optimizer is used
+          //double target_speed = 63;
+          //pid_speed.setTarget(70 - 5*1/((1+cte)*(1+cte)) - 0.5*angle*angle);
 
 
           // Update error and calculate new steering value
